@@ -32,15 +32,15 @@ socket.on('updateProjectiles', (backEndProjectiles) => {
         color: frontEndPlayers[backEndProjectile.playerId]?.color,
         velocity: backEndProjectile.velocity
       })
-    } else {
-      gsap.killTweensOf(frontEndProjectiles[id])
-      gsap.to(frontEndProjectiles[id], {
+      frontEndProjectiles[id].target = {
         x: backEndProjectile.x,
-        y: backEndProjectile.y,
-        velocity: backEndProjectile.velocity, // also interpolate velocity
-        duration: duration,
-        ease: 'linear'
-      })
+        y: backEndProjectile.y
+      }
+    } else {
+      frontEndProjectiles[id].target = {
+        x: backEndProjectile.x,
+        y: backEndProjectile.y
+      }
     }
   }
 
@@ -156,6 +156,13 @@ function animate() {
 
   for (const id in frontEndProjectiles) {
     const frontEndProjectile = frontEndProjectiles[id]
+    if (frontEndProjectile.target) {
+      frontEndProjectile.x +=
+        (frontEndProjectile.target.x - frontEndProjectile.x) * lerpFactor
+      frontEndProjectile.y +=
+        (frontEndProjectile.target.y - frontEndProjectile.y) * lerpFactor
+    }
+
     frontEndProjectile.draw()
   }
 
