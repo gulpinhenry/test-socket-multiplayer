@@ -51,11 +51,8 @@ socket.on('updateProjectiles', (backEndProjectiles) => {
   }
 })
 
-let lastUpdateTime = Date.now()
+const lerpFactor = 0.1
 socket.on('updatePlayers', (backEndPlayers) => {
-  const currentTime = Date.now()
-  const duration = (currentTime - lastUpdateTime) / 1000 // Convert to seconds
-  lastUpdateTime = currentTime
   for (const id in backEndPlayers) {
     const backEndPlayer = backEndPlayers[id]
 
@@ -66,6 +63,11 @@ socket.on('updatePlayers', (backEndPlayers) => {
         radius: 10,
         color: backEndPlayer.color
       })
+
+      frontEndPlayers[id].target = {
+        x: backEndPlayer.x,
+        y: backEndPlayer.y
+      }
 
       document.querySelector(
         '#playerLabels'
@@ -102,8 +104,8 @@ socket.on('updatePlayers', (backEndPlayers) => {
 
       if (id === socket.id) {
         // if a player already exists
-        frontEndPlayers[id].x = backEndPlayer.x
-        frontEndPlayers[id].y = backEndPlayer.y
+        frontEndPlayers[id].target.x = backEndPlayer.x
+        frontEndPlayers[id].target.y = backEndPlayer.y
 
         const lastBackendInputIndex = playerInputs.findIndex((input) => {
           return backEndPlayer.sequenceNumber === input.sequenceNumber
@@ -113,20 +115,8 @@ socket.on('updatePlayers', (backEndPlayers) => {
           playerInputs.splice(0, lastBackendInputIndex + 1)
 
         playerInputs.forEach((input) => {
-          frontEndPlayers[id].x += input.dx
-          frontEndPlayers[id].y += input.dy
-        })
-      } else {
-        // for all other players
-
-        console.log(duration)
-
-        gsap.killTweensOf(frontEndPlayers[id])
-        gsap.to(frontEndPlayers[id], {
-          x: backEndPlayer.x,
-          y: backEndPlayer.y,
-          duration,
-          ease: 'linear'
+          frontEndPlayers[id].target.x += input.dx
+          frontEndPlayers[id].target.y += input.dy
         })
       }
     }
@@ -155,6 +145,13 @@ function animate() {
 
   for (const id in frontEndPlayers) {
     const frontEndPlayer = frontEndPlayers[id]
+    if (frontEndPlayer.target) {
+      frontEndPlayer.x +=
+        (frontEndPlayer.target.x - frontEndPlayer.x) * lerpFactor
+      frontEndPlayer.y +=
+        (frontEndPlayer.target.y - frontEndPlayer.y) * lerpFactor
+    }
+
     frontEndPlayer.draw()
   }
 
