@@ -7,6 +7,12 @@ class Player {
   }
 
   draw() {
+    c.save()
+    c.shadowColor = this.color // Set the shadow color
+    c.shadowBlur = 40 // Set the amount of blur
+    c.shadowOffsetX = 0 // Set the horizontal distance of the shadow
+    c.shadowOffsetY = 0 // Set the vertical distance of the shadow
+
     c.beginPath()
     c.arc(
       this.x,
@@ -18,5 +24,11 @@ class Player {
     )
     c.fillStyle = this.color
     c.fill()
+
+    c.font = '24px sans-serif'
+    c.fillStyle = 'white'
+    c.fillText('yolo', this.x - 20, this.y + 50)
+
+    c.restore()
   }
 }

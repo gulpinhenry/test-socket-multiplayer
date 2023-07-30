@@ -48,8 +48,8 @@ io.on('connection', (socket) => {
 
   socket.on('initGame', ({ username, width, height, devicePixelRatio }) => {
     backEndPlayers[socket.id] = {
-      x: 500 * Math.random(),
-      y: 500 * Math.random(),
+      x: (width - RADIUS) * Math.random() + RADIUS,
+      y: (height - RADIUS) * Math.random() + RADIUS,
       color: `hsl(${360 * Math.random()}, 100%, 50%)`,
       sequenceNumber: 0,
       score: 0,
@@ -94,6 +94,16 @@ io.on('connection', (socket) => {
         backEndPlayers[socket.id].x += SPEED
         break
     }
+
+    if (backEndPlayers[socket.id].x - backEndPlayers[socket.id].radius <= 0)
+      backEndPlayers[socket.id].x = backEndPlayers[socket.id].radius
+
+    // if (
+    //   backEndPlayers[id].x + backEndPlayers[id].radius >=
+    //   backEndPlayers[id].canvas.width
+    // )
+    //   backEndPlayers[id].x =
+    //     backEndPlayers[id].canvas.width - backEndPlayers[id].radius
   })
 })
 
