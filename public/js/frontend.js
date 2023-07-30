@@ -73,6 +73,9 @@ socket.on('updatePlayers', (backEndPlayers) => {
         '#playerLabels'
       ).innerHTML += `<div data-id="${id}" data-score="${backEndPlayer.score}">${backEndPlayer.username}: ${backEndPlayer.score}</div>`
     } else {
+      frontEndPlayers[id].target.x = backEndPlayer.x
+      frontEndPlayers[id].target.y = backEndPlayer.y
+
       document.querySelector(
         `div[data-id="${id}"]`
       ).innerHTML = `${backEndPlayer.username}: ${backEndPlayer.score}`
@@ -101,12 +104,8 @@ socket.on('updatePlayers', (backEndPlayers) => {
       childDivs.forEach((div) => {
         parentDiv.appendChild(div)
       })
-
       if (id === socket.id) {
         // if a player already exists
-        frontEndPlayers[id].target.x = backEndPlayer.x
-        frontEndPlayers[id].target.y = backEndPlayer.y
-
         const lastBackendInputIndex = playerInputs.findIndex((input) => {
           return backEndPlayer.sequenceNumber === input.sequenceNumber
         })
