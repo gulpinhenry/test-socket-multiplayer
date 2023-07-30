@@ -32,8 +32,8 @@ io.on('connection', (socket) => {
     projectileId++
 
     const velocity = {
-      x: Math.cos(angle) * 5,
-      y: Math.sin(angle) * 5
+      x: Math.cos(angle) * 10,
+      y: Math.sin(angle) * 10
     }
 
     backEndProjectiles[projectileId] = {
@@ -95,15 +95,32 @@ io.on('connection', (socket) => {
         break
     }
 
-    if (backEndPlayers[socket.id].x - backEndPlayers[socket.id].radius <= 0)
+    const isOnScreen = {
+      left: backEndPlayers[socket.id].x - backEndPlayers[socket.id].radius <= 0,
+      right:
+        backEndPlayers[socket.id].x + backEndPlayers[socket.id].radius >=
+        backEndPlayers[socket.id].canvas.width,
+      top: backEndPlayers[socket.id].y - backEndPlayers[socket.id].radius <= 0,
+      bottom:
+        backEndPlayers[socket.id].y + backEndPlayers[socket.id].radius >=
+        backEndPlayers[socket.id].canvas.height
+    }
+
+    if (isOnScreen.left)
       backEndPlayers[socket.id].x = backEndPlayers[socket.id].radius
 
-    // if (
-    //   backEndPlayers[id].x + backEndPlayers[id].radius >=
-    //   backEndPlayers[id].canvas.width
-    // )
-    //   backEndPlayers[id].x =
-    //     backEndPlayers[id].canvas.width - backEndPlayers[id].radius
+    if (isOnScreen.right)
+      backEndPlayers[socket.id].x =
+        backEndPlayers[socket.id].canvas.width -
+        backEndPlayers[socket.id].radius
+
+    if (isOnScreen.top)
+      backEndPlayers[socket.id].y = backEndPlayers[socket.id].radius
+
+    if (isOnScreen.bottom)
+      backEndPlayers[socket.id].y =
+        backEndPlayers[socket.id].canvas.height -
+        backEndPlayers[socket.id].radius
   })
 })
 
@@ -117,7 +134,7 @@ setInterval(() => {
     const PROJECTILE_RADIUS = 5
     if (
       backEndProjectiles[id].x - PROJECTILE_RADIUS >=
-        backEndPlayers[backEndProjectiles[id].playerId]?.canvas?.width ||
+        backEndPlayers[backEndProjectiles[id].playerId]?.canvas?.height ||
       backEndProjectiles[id].x + PROJECTILE_RADIUS <= 0 ||
       backEndProjectiles[id].y - PROJECTILE_RADIUS >=
         backEndPlayers[backEndProjectiles[id].playerId]?.canvas?.height ||

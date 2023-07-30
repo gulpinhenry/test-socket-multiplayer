@@ -52,7 +52,22 @@ socket.on('updateProjectiles', (backEndProjectiles) => {
 })
 
 const lerpFactor = 0.1
+let lastUpdateTime = Date.now()
+let updateTimes = []
+let updateRate = 0.15
 socket.on('updatePlayers', (backEndPlayers) => {
+  let now = Date.now()
+  updateTimes.push(now - lastUpdateTime)
+
+  // Keep only the last 10 update times
+  if (updateTimes.length > 10) {
+    updateTimes.shift()
+  }
+
+  updateRate = updateTimes.reduce((a, b) => a + b) / updateTimes.length / 1000 // Convert from ms to s
+
+  lastUpdateTime = now
+
   for (const id in backEndPlayers) {
     const backEndPlayer = backEndPlayers[id]
 
@@ -61,20 +76,23 @@ socket.on('updatePlayers', (backEndPlayers) => {
         x: backEndPlayer.x,
         y: backEndPlayer.y,
         radius: 10,
-        color: backEndPlayer.color
+        color: backEndPlayer.color,
+        username: backEndPlayer.username,
+        previousUpdate: { x: backEndPlayer.x, y: backEndPlayer.y },
+        nextUpdate: { x: backEndPlayer.x, y: backEndPlayer.y },
+        timeReceived: Date.now()
       })
-
-      frontEndPlayers[id].target = {
-        x: backEndPlayer.x,
-        y: backEndPlayer.y
-      }
 
       document.querySelector(
         '#playerLabels'
       ).innerHTML += `<div data-id="${id}" data-score="${backEndPlayer.score}">${backEndPlayer.username}: ${backEndPlayer.score}</div>`
     } else {
-      frontEndPlayers[id].target.x = backEndPlayer.x
-      frontEndPlayers[id].target.y = backEndPlayer.y
+      frontEndPlayers[id].previousUpdate = frontEndPlayers[id].nextUpdate
+      frontEndPlayers[id].nextUpdate = {
+        x: backEndPlayer.x,
+        y: backEndPlayer.y
+      }
+      frontEndPlayers[id].timeReceived = Date.now()
 
       document.querySelector(
         `div[data-id="${id}"]`
@@ -114,8 +132,8 @@ socket.on('updatePlayers', (backEndPlayers) => {
           playerInputs.splice(0, lastBackendInputIndex + 1)
 
         playerInputs.forEach((input) => {
-          frontEndPlayers[id].target.x += input.dx
-          frontEndPlayers[id].target.y += input.dy
+          // frontEndPlayers[id].target.x += input.dx
+          // frontEndPlayers[id].target.y += input.dy
         })
       }
     }
@@ -141,15 +159,23 @@ function animate() {
   animationId = requestAnimationFrame(animate)
   // c.fillStyle = 'rgba(0, 0, 0, 0.1)'
   c.clearRect(0, 0, canvas.width, canvas.height)
+  const now = Date.now()
 
   for (const id in frontEndPlayers) {
     const frontEndPlayer = frontEndPlayers[id]
-    if (frontEndPlayer.target) {
-      frontEndPlayer.x +=
-        (frontEndPlayer.target.x - frontEndPlayer.x) * lerpFactor
-      frontEndPlayer.y +=
-        (frontEndPlayer.target.y - frontEndPlayer.y) * lerpFactor
-    }
+    const elapsedTime = (now - frontEndPlayer.timeReceived) / 1000 // convert ms to seconds
+    const lerpFactor = elapsedTime / updateRate // assuming `updateRate` is the time between server updates
+
+    frontEndPlayer.x = lerp(
+      frontEndPlayer.previousUpdate.x,
+      frontEndPlayer.nextUpdate.x,
+      lerpFactor
+    )
+    frontEndPlayer.y = lerp(
+      frontEndPlayer.previousUpdate.y,
+      frontEndPlayer.nextUpdate.y,
+      lerpFactor
+    )
 
     frontEndPlayer.draw()
   }
@@ -189,35 +215,53 @@ const keys = {
   }
 }
 
+function lerp(a, b, t) {
+  return a + t * (b - a)
+}
+
 const SPEED = 10
 const playerInputs = []
 let sequenceNumber = 0
 setInterval(() => {
-  if (keys.w.pressed) {
+  if (!frontEndPlayers[socket.id]) return
+
+  const isOnScreen = {
+    left:
+      frontEndPlayers[socket.id].x - frontEndPlayers[socket.id].radius - SPEED >
+      0,
+    right:
+      frontEndPlayers[socket.id].x + frontEndPlayers[socket.id].radius + SPEED <
+      canvas.width,
+    top:
+      frontEndPlayers[socket.id].y - frontEndPlayers[socket.id].radius - SPEED >
+      0,
+    bottom:
+      frontEndPlayers[socket.id].y + frontEndPlayers[socket.id].radius + SPEED <
+      canvas.height
+  }
+
+  if (keys.w.pressed && isOnScreen.top) {
     sequenceNumber++
     playerInputs.push({ sequenceNumber, dx: 0, dy: -SPEED })
     frontEndPlayers[socket.id].y -= SPEED
     socket.emit('keydown', { keycode: 'KeyW', sequenceNumber })
   }
 
-  if (
-    keys.a.pressed &&
-    frontEndPlayers[socket.id].x - frontEndPlayers[socket.id].radius - SPEED > 0
-  ) {
+  if (keys.a.pressed && isOnScreen.left) {
     sequenceNumber++
     playerInputs.push({ sequenceNumber, dx: -SPEED, dy: 0 })
     frontEndPlayers[socket.id].x -= SPEED
     socket.emit('keydown', { keycode: 'KeyA', sequenceNumber })
   }
 
-  if (keys.s.pressed) {
+  if (keys.s.pressed && isOnScreen.bottom) {
     sequenceNumber++
     playerInputs.push({ sequenceNumber, dx: 0, dy: SPEED })
     frontEndPlayers[socket.id].y += SPEED
     socket.emit('keydown', { keycode: 'KeyS', sequenceNumber })
   }
 
-  if (keys.d.pressed) {
+  if (keys.d.pressed && isOnScreen.right) {
     sequenceNumber++
     playerInputs.push({ sequenceNumber, dx: SPEED, dy: 0 })
     frontEndPlayers[socket.id].x += SPEED

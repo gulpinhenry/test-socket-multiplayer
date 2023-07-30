@@ -1,9 +1,19 @@
 class Player {
-  constructor({ x, y, radius, color }) {
+  constructor({
+    x,
+    y,
+    radius,
+    color,
+    username,
+    previousUpdate,
+    nextUpdate,
+    timeReceived
+  }) {
     this.x = x
     this.y = y
     this.radius = radius
     this.color = color
+    this.username = username
   }
 
   draw() {
@@ -27,7 +37,7 @@ class Player {
 
     c.font = '24px sans-serif'
     c.fillStyle = 'white'
-    c.fillText('yolo', this.x - 20, this.y + 50)
+    c.fillText(this.username, this.x - 20, this.y + 50)
 
     c.restore()
   }
